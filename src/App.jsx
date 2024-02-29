@@ -1,26 +1,63 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
-import { Delete, ModeEdit } from '@mui/icons-material'
-import ToDoItem from './components/ToDoItem'
 import ToDoList from './components/ToDoList'
-import Checkbox from '@mui/material/Checkbox';
-import { IconButton } from '@mui/material';
+import Form from './components/Form'
 
 function App() {
 
-  const [input, setInput] = useState("")
-  const [todoList , setTodoList] = useState([]);
-  const [checked, setChecked] = useState(true)
+  const [todoList, setTodoList] = useState(() => {
+    try {
+      const localValue = localStorage.getItem("todoList")
+      if (localValue == null) return [];
+      return JSON.parse(localValue)
+    } catch (error) {
+      console.log("Error getting list from Local Storage - ", error)
+    }
 
-  const handleChange = (event) => {
-    setInput(event.target.value)
-  }
+  });
 
-  const handleAddTodo = () => {
+  useEffect(() => {
+    try {
+      localStorage.setItem("todoList", JSON.stringify(todoList))
+    } catch (error) {
+      console.log("Error serializing lsit to Local Storage - " , error)
+    } 
+  }, [todoList])
+
+  const handleAddTodo = (input) => {
+    if (!input) {
+      return;
+    }
     setTodoList((currentTodos) => {
-      return [...currentTodos , input]
+      var completed = false;
+
+      return [...currentTodos, {
+        id: crypto.randomUUID(),
+        title: input,
+        completed: completed,
+      }]
     })
   }
+
+  const toggleTodo = (id , completed) => {
+    setTodoList(currentTodos => {
+      return currentTodos.map(todo => {
+        if (todo.id === id) {
+          return { ...todo, completed: !completed }
+        }
+        return todo;
+      })
+    })
+
+    console.log(todoList)
+  }
+
+  const deleteTodo = (id) => {
+    setTodoList(currentTodos => {
+      return currentTodos.filter(todo => todo.id !== id)
+    })
+  }
+
 
   return (
     <>
@@ -30,29 +67,9 @@ function App() {
             <h1 className='text-xl text-white font-semibold mt-5'>Get Things Done!</h1>
           </div>
 
-          <div id='' className='m-5 mb-10 flex'>
-            <input value={input} onChange={handleChange} className='p-2 flex-1 w-80 text-gray-400 font-semibold bg-violet-950 border border-violet-600 outline-none' placeholder='Add a new task' />
-            <button onClick={handleAddTodo} className='text-white font-semibold w-16 bg-violet-600 p-3'>Add</button>
-          </div>
+          <Form handleAddTodo={handleAddTodo} />
+          <ToDoList todoList={todoList} toggleTodo={toggleTodo} deleteTodo={deleteTodo} />
 
-          <div id='to-do-list' className='flex flex-col gap-3 mb-5'>
-            {todoList?.map((todo, i) =>
-                ( <div className='flex bg-violet-600 p-4 mx-5 rounded-lg justify-between items-center'>
-                <div className='flex items-center'>
-                    <Checkbox checked={checked} />
-                    <p className='text-white font-semibold ml-3'>{todo}</p>
-                </div>
-                <div>
-                    <IconButton>
-                        <ModeEdit className='text-white' />
-                    </IconButton>
-                    <IconButton>
-                        <Delete className='text-white' />
-                    </IconButton>
-                </div>
-            </div>)
-            )}
-        </div>
         </div>
       </div>
     </>
